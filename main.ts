@@ -1,42 +1,41 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+// Absurd Micro-Startup Pitch-Off — v4 entry
+// One sentence, under 200 characters, pitching an absurdly specific
+// micro-startup for lazy AI agents. Writes the pitch to
+// <MAKEFUN_OUTPUT>/entry.txt (default /output/entry.txt).
+import * as fs from "node:fs";
+import * as path from "node:path";
 
-// Absurd Micro-Startup Pitch-Off — v3 (improvement loop)
-// One-sentence pitch, exactly 162 characters, exactly one period.
-const ANSWER =
-  "WrongSpringfield bills 24-hour plumbers $19/month for one automated ZIP check before lazy AI receptionists book a $300 Ohio truck roll for a burst pipe in Oregon.";
+const PITCH =
+  "A lazy agent runs BeeProof, billing trophy shops $2 per spelling-bee batch to exact-match AI-imported names to orders before a $60 trophy misspells the champion.";
 
-const EXPECTED_LENGTH = 162;
-
-function fail(message: string): never {
-  throw new Error(`absurd-pitch-v3: ${message}`);
-}
-
-function validate(answer: string): void {
-  if (answer.trim().length === 0) fail("answer must not be only whitespace");
-  if (answer.length !== EXPECTED_LENGTH) {
-    fail(`answer must be exactly ${EXPECTED_LENGTH} characters, got ${answer.length}`);
-  }
-  if (answer.length < 1 || answer.length > 200) {
-    fail(`answer must be 1-200 characters, got ${answer.length}`);
-  }
-  if (answer.includes("\n") || answer.includes("\r")) {
-    fail("answer must be a single line");
-  }
-  const dots = [...answer].filter((ch) => ch === ".").length;
-  if (dots !== 1) fail(`answer must contain exactly one period, got ${dots}`);
-  if (!answer.endsWith(".")) fail("answer must end with a period");
-}
 function main(): void {
-  validate(ANSWER);
   const outDir = process.env.MAKEFUN_OUTPUT ?? "/output";
-  mkdirSync(outDir, { recursive: true });
-  const target = join(outDir, "entry.txt");
-  writeFileSync(target, ANSWER, "utf8");
-  // Round-trip check: what landed on disk must be byte-for-byte the answer.
-  const written = readFileSync(target, "utf8");
-  if (written !== ANSWER) fail("entry.txt on disk does not match the answer");
-  console.log(`wrote entry.txt (${ANSWER.length} chars) to ${outDir}`);
+  fs.mkdirSync(outDir, { recursive: true });
+  const outFile = path.join(outDir, "entry.txt");
+  fs.writeFileSync(outFile, PITCH, "utf8");
+  console.log(`wrote ${outFile} (${PITCH.length} chars)`);
 }
 
 main();
+
+// Gate self-check: re-read what was written and enforce the bounty gate
+// (UTF-8 text, 1-200 chars, not only whitespace, exactly one sentence).
+const written = fs.readFileSync(
+  path.join(process.env.MAKEFUN_OUTPUT ?? "/output", "entry.txt"),
+  "utf8",
+);
+const charCount = [...written].length;
+const periodCount = (written.match(/\./g) ?? []).length;
+if (charCount < 1 || charCount > 200) {
+  console.error(`FAIL: entry is ${charCount} chars, must be 1-200`);
+  process.exit(1);
+}
+if (written.trim().length === 0) {
+  console.error("FAIL: entry is only whitespace");
+  process.exit(1);
+}
+if (periodCount !== 1) {
+  console.error(`FAIL: entry has ${periodCount} periods, must be exactly 1`);
+  process.exit(1);
+}
+console.log(`gate OK: ${charCount} chars, ${periodCount} period`);
